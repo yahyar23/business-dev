@@ -50,16 +50,6 @@
 <body>
 
 <div id="app" v-cloak>
-    <div v-if="showAlert" class="fixed top-5 left-1/2 -translate-x-1/2 z-50 w-full max-w-lg px-4 no-print">
-        <div class="bg-orange-600/90 backdrop-blur-md text-white p-4 rounded-xl shadow-2xl border border-orange-400 flex justify-between items-center animate-bounce">
-            <div>
-                <span class="font-bold">🔔 تنبيه الاستحقاقات:</span>
-                <span class="text-sm mr-2">اليوم هو {{ todayDay }} في الشهر، يرجى مراجعة استحقاقات الشهر القادم.</span>
-            </div>
-            <button @click="showAlert = false" class="bg-white/20 hover:bg-white/40 rounded-full w-8 h-8">✕</button>
-        </div>
-    </div>
-
     <div v-if="!isLoggedIn" class="min-h-screen flex items-center justify-center bg-[#0f0a1e]">
         <div class="glass-card p-8 w-full max-w-md shadow-2xl">
             <h2 class="text-2xl font-bold mb-6 text-center text-blue-400">تسجيل الدخول للنظام</h2>
@@ -166,25 +156,18 @@
             </div>
 
             <div class="lg:col-span-8">
-                <div class="glass-card p-4 mb-6 no-print flex flex-col md:flex-row gap-4 items-center">
-                    <div class="relative w-full md:w-1/2">
-                        <input v-model="searchQuery" type="text" placeholder="بحث بالاسم أو رقم الإضبارة..." class="w-full pr-10">
-                        <span class="absolute right-3 top-3 text-gray-500">🔍</span>
-                    </div>
-                    <div class="flex gap-2 w-full md:w-auto overflow-x-auto">
-                        <button @click="filterType = 'all'" :class="filterType === 'all' ? 'bg-purple-600' : 'bg-gray-700'" class="btn text-[10px]">الكل</button>
-                        <button @click="filterType = 'allowance'" :class="filterType === 'allowance' ? 'bg-blue-600' : 'bg-gray-700'" class="btn text-[10px]">العلاوات</button>
-                        <button @click="filterType = 'promotion'" :class="filterType === 'promotion' ? 'bg-orange-600' : 'bg-gray-700'" class="btn text-[10px]">الترفيعات</button>
-                    </div>
-                </div>
-
                 <div class="glass-card p-6">
                     <div class="flex flex-wrap justify-between items-center mb-6 no-print gap-4">
                         <div class="flex gap-2">
-                             <button @click="showStartDate = !showStartDate" class="btn bg-teal-600 text-[10px]">
+                            <button @click="filterType = 'all'" :class="filterType === 'all' ? 'bg-purple-600' : 'bg-gray-700'" class="btn text-[10px]">الكل</button>
+                            <button @click="filterType = 'allowance'" :class="filterType === 'allowance' ? 'bg-blue-600' : 'bg-gray-700'" class="btn text-[10px]">العلاوات فقط</button>
+                            <button @click="filterType = 'promotion'" :class="filterType === 'promotion' ? 'bg-orange-600' : 'bg-gray-700'" class="btn text-[10px]">الترفيعات فقط</button>
+                        </div>
+                        <div class="flex gap-2">
+                            <button @click="showStartDate = !showStartDate" class="btn bg-teal-600 text-[10px]">
                                 {{ showStartDate ? 'إخفاء المباشرة' : 'إظهار المباشرة' }}
                             </button>
-                            <button @click="executeBulk" class="btn bg-green-600 text-[10px]">تنفيذ الفرز</button>
+                            <button @click="executeBulk" class="btn bg-green-600 text-[10px]">تنفيذ شامل للفرز</button>
                             <button @click="printData" class="btn bg-gray-600 text-[10px]">🖨️ طباعة</button>
                         </div>
                     </div>
@@ -204,7 +187,7 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                <tr v-for="emp in paginatedList" :key="emp.id" :class="{'bg-green-500/10': isDue(emp)}">
+                                <tr v-for="emp in displayList" :key="emp.id" :class="{'bg-green-500/10': isDue(emp)}">
                                     <td class="text-gray-400 font-mono text-[11px]">{{ emp.fileId || '---' }}</td>
                                     <td>
                                         <div class="font-bold text-sm">{{ emp.name }}</div>
@@ -232,17 +215,6 @@
                             </tbody>
                         </table>
                     </div>
-
-                    <div class="mt-6 flex justify-between items-center no-print border-t border-white/10 pt-4">
-                        <div class="text-xs text-gray-400">
-                            عرض {{ paginatedList.length }} من أصل {{ filteredList.length }} موظف
-                        </div>
-                        <div class="flex gap-2">
-                            <button @click="currentPage--" :disabled="currentPage === 1" class="btn bg-gray-700 text-xs disabled:opacity-30">السابق</button>
-                            <span class="flex items-center px-4 text-sm font-bold text-blue-400">{{ currentPage }}</span>
-                            <button @click="currentPage++" :disabled="currentPage * pageSize >= filteredList.length" class="btn bg-gray-700 text-xs disabled:opacity-30">التالي</button>
-                        </div>
-                    </div>
                 </div>
             </div>
         </div>
@@ -250,7 +222,7 @@
 </div>
 
 <script>
-const { createApp, ref, computed, onMounted, watch } = Vue;
+const { createApp, ref, computed, onMounted } = Vue;
 
 createApp({
     setup() {
@@ -262,12 +234,6 @@ createApp({
         const employees = ref([]);
         const isEdit = ref(false);
         const editId = ref(null);
-        
-        // خصائص البحث والترقيم
-        const searchQuery = ref('');
-        const currentPage = ref(1);
-        const pageSize = ref(10);
-        const showAlert = ref(false);
 
         const schools = ["روضة الزهور", "الامام الهادي", "بابل", "فجر الخير", "بشائر السلام", "الحكيم", "الايثار", "الشهامه", "الشهيد عماد", "الشهيد ضياء عبد الحسين", "حضارة العراق", "عشتار", "المسجد الاقصى", "النابغة", "الامانة", "الشهيد محمد مجبل", "الفكر النير", "التضامن"];
 
@@ -280,17 +246,7 @@ createApp({
         onMounted(() => {
             const data = localStorage.getItem('rusafa_edu_db_v4');
             if (data) employees.value = JSON.parse(data);
-            
-            // التحقق من تاريخ 20 في الشهر لإظهار التنبيه
-            const day = new Date().getDate();
-            if (day >= 20) {
-                showAlert.value = true;
-            }
         });
-
-        // إعادة الترقيم للصفحة الأولى عند البحث
-        watch(searchQuery, () => currentPage.value = 1);
-        watch(filterType, () => currentPage.value = 1);
 
         const handleLogin = () => {
             if (loginForm.value.user === 'yahya' && loginForm.value.pass === '11223344Ee') {
@@ -374,37 +330,18 @@ createApp({
         };
 
         const executeBulk = () => {
-            const targets = filteredList.value.filter(e => isDue(e));
+            const targets = displayList.value.filter(e => isDue(e));
             if (targets.length === 0) return alert("لا يوجد مستحقين في القائمة الحالية");
             targets.forEach(e => applyUpgrade(e, true));
             saveToLocal();
             alert(`تم تنفيذ ${targets.length} استحقاق بنجاح`);
         };
 
-        // الفلترة والبحث
-        const filteredList = computed(() => {
+        const displayList = computed(() => {
             let list = [...employees.value].sort((a,b) => new Date(getNextDate(a)) - new Date(getNextDate(b)));
-            
-            // فلترة النوع
-            if (filterType.value === 'allowance') list = list.filter(e => !isPromotion(e.salary));
-            if (filterType.value === 'promotion') list = list.filter(e => isPromotion(e.salary));
-            
-            // بحث النص
-            if (searchQuery.value) {
-                const q = searchQuery.value.toLowerCase();
-                list = list.filter(e => 
-                    e.name.toLowerCase().includes(q) || 
-                    (e.fileId && e.fileId.toString().includes(q))
-                );
-            }
+            if (filterType.value === 'allowance') return list.filter(e => !isPromotion(e.salary));
+            if (filterType.value === 'promotion') return list.filter(e => isPromotion(e.salary));
             return list;
-        });
-
-        // الترقيم الصفحي (Pagination)
-        const paginatedList = computed(() => {
-            const start = (currentPage.value - 1) * pageSize.value;
-            const end = start + pageSize.value;
-            return filteredList.value.slice(start, end);
         });
 
         const saveEmployee = () => {
@@ -429,10 +366,9 @@ createApp({
 
         return {
             isLoggedIn, loginForm, loginError, handleLogin, logout, schools, form, employees,
-            filteredList, paginatedList, saveEmployee, isEdit, getTitle, getNextDate, isDue, applyUpgrade, 
-            deleteEmp, editEmp, filterType, executeBulk, showStartDate, searchQuery, currentPage, pageSize, showAlert,
+            displayList, saveEmployee, isEdit, getTitle, getNextDate, isDue, applyUpgrade, 
+            deleteEmp, editEmp, filterType, executeBulk, showStartDate,
             todayDate: new Date().toLocaleDateString('ar-IQ'),
-            todayDay: new Date().getDate(),
             printData: () => window.print()
         };
     }
