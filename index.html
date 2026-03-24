@@ -25,18 +25,15 @@
             padding: 10px;
             border-radius: 8px;
             appearance: none;
-            width: 100%;
         }
         select option { background-color: #0f0a1e; color: white; }
 
         table { width: 100%; border-collapse: collapse; }
-        th { background: rgba(255,255,255,0.1); padding: 12px; text-align: right; color: #a78bfa; font-size: 13px; }
+        th { background: rgba(255,255,255,0.1); padding: 12px; text-align: right; color: #a78bfa; font-size: 14px; }
         td { padding: 12px; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 13px; }
         
         .btn { cursor: pointer; padding: 8px 16px; border-radius: 8px; border: none; font-weight: bold; transition: 0.3s; }
         .btn:hover { opacity: 0.8; transform: scale(0.98); }
-
-        .active-tab { border-bottom: 3px solid #a78bfa; color: #a78bfa; font-weight: bold; }
 
         [v-cloak] { display: none; }
 
@@ -53,111 +50,97 @@
 <body>
 
 <div id="app" v-cloak>
-    <div v-if="!isLoggedIn" class="min-h-screen flex items-center justify-center p-4">
-        <div class="glass-card p-8 w-full max-w-md">
-            <h2 class="text-2xl font-bold text-center mb-6 text-blue-400">تسجيل الدخول للنظام</h2>
+    <div v-if="!isLoggedIn" class="min-h-screen flex items-center justify-center bg-[#0f0a1e]">
+        <div class="glass-card p-8 w-full max-w-md shadow-2xl">
+            <h2 class="text-2xl font-bold mb-6 text-center text-blue-400">تسجيل الدخول للنظام</h2>
             <div class="space-y-4">
-                <div>
-                    <label class="text-xs block mb-1">اسم المستخدم</label>
-                    <input v-model="login.user" type="text" placeholder="yahya">
-                </div>
-                <div>
-                    <label class="text-xs block mb-1">كلمة المرور</label>
-                    <input v-model="login.pass" type="password" placeholder="••••••••">
-                </div>
-                <button @click="handleLogin" class="w-full btn mastercard-gradient py-3">دخول</button>
-                <p v-if="loginError" class="text-red-400 text-center text-xs mt-2 font-bold">خطأ في البيانات!</p>
+                <input v-model="loginForm.user" type="text" placeholder="اسم المستخدم" class="w-full">
+                <input v-model="loginForm.pass" type="password" placeholder="كلمة المرور" class="w-full">
+                <button @click="handleLogin" class="w-full btn mastercard-gradient py-3 text-lg">دخول</button>
+                <p v-if="loginError" class="text-red-400 text-center text-sm">خطأ في اسم المستخدم أو كلمة المرور</p>
             </div>
         </div>
     </div>
 
-    <div v-else class="p-4 md:p-10">
-        <div class="flex justify-between items-center mb-10 no-print">
+    <div v-else class="p-4 md:p-8">
+        <div class="flex justify-between items-center mb-8 no-print">
             <div>
-                <h1 class="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-blue-400">نظام العلاوات والترفيعات</h1>
-                <p class="text-gray-400 text-sm">قسم الترفيعات - الرصافة الأولى</p>
+                <h1 class="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-blue-400">نظام الاستحقاقات الرقمي</h1>
+                <p class="text-gray-400 text-sm italic">مديرية الرصافة الأولى - قسم الترفيعات</p>
             </div>
             <div class="flex gap-4 items-center">
-                <div class="text-left glass-card p-3">
-                    <div class="text-lg font-bold text-blue-400">{{ todayDate }}</div>
-                </div>
-                <button @click="isLoggedIn = false" class="text-red-400 text-xs">خروج</button>
+                <div class="glass-card p-2 text-blue-400 font-bold px-4">{{ todayDate }}</div>
+                <button @click="logout" class="text-red-400 underline text-sm">تسجيل خروج</button>
             </div>
         </div>
 
         <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
             <div class="lg:col-span-4 no-print">
                 <div class="glass-card p-6 sticky top-5">
-                    <h3 class="text-lg font-bold mb-4 border-b border-white/10 pb-2 text-purple-300">إضافة موظف جديد</h3>
+                    <h3 class="text-lg font-bold mb-4 border-b border-white/10 pb-2 text-purple-300">إضافة / تعديل بيانات</h3>
                     <div class="space-y-4">
                         <div class="grid grid-cols-2 gap-2">
                             <div>
-                                <label class="text-[10px] block mb-1">رقم الإضبارة</label>
-                                <input v-model="form.fileNo" type="text" placeholder="0000">
+                                <label class="text-[11px] block mb-1">رقم الإضبارة</label>
+                                <input v-model="form.fileId" type="text" class="w-full" placeholder="0000">
                             </div>
                             <div>
-                                <label class="text-[10px] block mb-1">تاريخ المباشرة</label>
-                                <input v-model="form.joinDate" type="date">
+                                <label class="text-[11px] block mb-1">تاريخ المباشرة</label>
+                                <input v-model="form.startDate" type="date" class="w-full">
                             </div>
                         </div>
 
                         <div>
-                            <label class="text-xs block mb-1">الاسم الرباعي</label>
-                            <input v-model="form.name" type="text" placeholder="أدخل الاسم">
+                            <label class="text-[11px] block mb-1">الاسم الرباعي</label>
+                            <input v-model="form.name" type="text" class="w-full" placeholder="الاسم الكامل">
                         </div>
 
                         <div>
-                            <label class="text-xs block mb-1">مكان العمل (المدرسة)</label>
-                            <select v-model="form.workplace">
+                            <label class="text-[11px] block mb-1">مكان العمل (المدرسة)</label>
+                            <select v-model="form.workplace" class="w-full">
                                 <option v-for="school in schools" :key="school" :value="school">{{ school }}</option>
                             </select>
                         </div>
                         
                         <div class="grid grid-cols-2 gap-2">
                             <div>
-                                <label class="text-xs block mb-1">الشهادة</label>
-                                <select v-model="form.degree">
+                                <label class="text-[11px] block mb-1">الشهادة</label>
+                                <select v-model="form.degree" class="w-full">
                                     <option value="دبلوم">دبلوم (معلم)</option>
                                     <option value="بكالوريوس">بكالوريوس (جامعي)</option>
                                     <option value="مرشد">مرشد تربوي</option>
                                 </select>
                             </div>
                             <div>
-                                <label class="text-xs block mb-1">الراتب الحالي</label>
-                                <input v-model.number="form.salary" type="number">
+                                <label class="text-[11px] block mb-1">الراتب الحالي</label>
+                                <input v-model.number="form.salary" type="number" class="w-full">
                             </div>
                         </div>
 
                         <div>
-                            <label class="text-xs block mb-1">تاريخ الاستحقاق السابق</label>
-                            <input v-model="form.lastDate" type="date">
+                            <label class="text-[11px] block mb-1">تاريخ الاستحقاق السابق</label>
+                            <input v-model="form.lastDate" type="date" class="w-full">
                         </div>
 
                         <div class="p-3 bg-blue-500/10 rounded-lg border border-blue-500/20">
-                            <label class="text-xs text-blue-300 block mb-2 font-bold text-center">كتب الشكر (حد أقصى 3)</label>
+                            <label class="text-[11px] text-blue-300 block mb-2 font-bold text-center">كتب الشكر (أقصى حد 3)</label>
                             <div class="grid grid-cols-2 gap-2">
-                                <div>
-                                    <label class="text-[10px] block mb-1">عدد الكتب</label>
-                                    <select v-model.number="form.thanksCount" class="text-xs p-1">
-                                        <option value="0">0</option>
-                                        <option value="1">1</option>
-                                        <option value="2">2</option>
-                                        <option value="3">3</option>
-                                    </select>
-                                </div>
-                                <div>
-                                    <label class="text-[10px] block mb-1">الجهة</label>
-                                    <select v-model="form.thanksType" class="text-xs p-1">
-                                        <option value="manager">مدير عام (-1 شهر)</option>
-                                        <option value="minister">وزير (-6 أشهر)</option>
-                                    </select>
-                                </div>
+                                <select v-model.number="form.thanksCount" class="w-full text-xs p-1">
+                                    <option value="0">بدون شكر</option>
+                                    <option value="1">1 كتاب</option>
+                                    <option value="2">2 كتاب</option>
+                                    <option value="3">3 كتب</option>
+                                </select>
+                                <select v-model="form.thanksType" class="w-full text-xs p-1">
+                                    <option value="manager">مدير عام (-1 شهر)</option>
+                                    <option value="minister">وزير (-6 أشهر)</option>
+                                </select>
                             </div>
                         </div>
 
                         <div class="p-3 bg-red-500/10 rounded-lg border border-red-500/20">
-                            <label class="text-xs text-red-400 block mb-1 font-bold">العقوبات</label>
-                            <select v-model="form.penalty" class="text-xs p-1">
+                            <label class="text-[11px] text-red-400 block mb-1 font-bold">العقوبات</label>
+                            <select v-model="form.penalty" class="text-xs w-full p-1">
                                 <option value="none">لا يوجد</option>
                                 <option value="warn1">لفت نظر (+3 أشهر)</option>
                                 <option value="warn2">إنذار (+6 أشهر)</option>
@@ -165,8 +148,8 @@
                             </select>
                         </div>
 
-                        <button @click="saveEmployee" class="w-full btn mastercard-gradient py-3 text-lg">
-                            {{ isEdit ? 'تحديث' : 'حفظ' }}
+                        <button @click="saveEmployee" class="w-full btn mastercard-gradient py-4 text-lg">
+                            {{ isEdit ? 'تحديث البيانات' : 'حفظ الموظف' }}
                         </button>
                     </div>
                 </div>
@@ -175,15 +158,17 @@
             <div class="lg:col-span-8">
                 <div class="glass-card p-6">
                     <div class="flex flex-wrap justify-between items-center mb-6 no-print gap-4">
-                        <div class="flex gap-4 border-b border-white/10">
-                            <button @click="currentTable = 'all'" :class="{'active-tab': currentTable === 'all'}">الكل</button>
-                            <button @click="currentTable = 'allowance'" :class="{'active-tab': currentTable === 'allowance'}">جدول العلاوات</button>
-                            <button @click="currentTable = 'promotion'" :class="{'active-tab': currentTable === 'promotion'}">جدول الترفيعات</button>
+                        <div class="flex gap-2">
+                            <button @click="filterType = 'all'" :class="filterType === 'all' ? 'bg-purple-600' : 'bg-gray-700'" class="btn text-[10px]">الكل</button>
+                            <button @click="filterType = 'allowance'" :class="filterType === 'allowance' ? 'bg-blue-600' : 'bg-gray-700'" class="btn text-[10px]">العلاوات فقط</button>
+                            <button @click="filterType = 'promotion'" :class="filterType === 'promotion' ? 'bg-orange-600' : 'bg-gray-700'" class="btn text-[10px]">الترفيعات فقط</button>
                         </div>
                         <div class="flex gap-2">
-                            <button @click="sortByDate" class="btn bg-indigo-600 text-[10px]">فرز التواريخ</button>
-                            <button @click="applyBulk" class="btn bg-green-600 text-[10px]">تنفيذ شامل للجدول</button>
-                            <button @click="printData" class="btn bg-gray-700 text-[10px]">طباعة</button>
+                            <button @click="showStartDate = !showStartDate" class="btn bg-teal-600 text-[10px]">
+                                {{ showStartDate ? 'إخفاء المباشرة' : 'إظهار المباشرة' }}
+                            </button>
+                            <button @click="executeBulk" class="btn bg-green-600 text-[10px]">تنفيذ شامل للفرز</button>
+                            <button @click="printData" class="btn bg-gray-600 text-[10px]">🖨️ طباعة</button>
                         </div>
                     </div>
 
@@ -193,30 +178,38 @@
                                 <tr>
                                     <th>الإضبارة</th>
                                     <th>الموظف / المدرسة</th>
-                                    <th>العنوان الوظيفي</th>
-                                    <th>الراتب</th>
+                                    <th>العنوان السابق</th>
+                                    <th>العنوان الحالي</th>
+                                    <th>الراتب (س/ح)</th>
+                                    <th v-if="showStartDate">المباشرة</th>
                                     <th>الاستحقاق</th>
-                                    <th class="no-print">إجراءات</th>
+                                    <th class="no-print">إجراء</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                <tr v-for="emp in filteredList" :key="emp.id" :class="{'bg-green-500/10': isDue(emp)}">
-                                    <td class="text-gray-400">#{{ emp.fileNo }}</td>
+                                <tr v-for="emp in displayList" :key="emp.id" :class="{'bg-green-500/10': isDue(emp)}">
+                                    <td class="text-gray-400 font-mono text-[11px]">{{ emp.fileId || '---' }}</td>
                                     <td>
-                                        <div class="font-bold">{{ emp.name }}</div>
+                                        <div class="font-bold text-sm">{{ emp.name }}</div>
                                         <div class="text-[10px] text-blue-300">{{ emp.workplace }}</div>
                                     </td>
-                                    <td>{{ getTitle(emp.salary, emp.degree) }}</td>
-                                    <td class="text-yellow-400 font-bold">{{ emp.salary }}</td>
+                                    <td class="text-gray-500 text-[11px]">{{ emp.prevTitle || '---' }}</td>
+                                    <td class="text-purple-300 font-bold">{{ getTitle(emp.salary, emp.degree) }}</td>
+                                    <td>
+                                        <span class="text-[10px] text-gray-500">{{ emp.prevSalary || '0' }}</span>
+                                        <span class="mx-1">←</span>
+                                        <span class="text-yellow-400 font-bold">{{ emp.salary }}</span>
+                                    </td>
+                                    <td v-if="showStartDate" class="text-[11px] text-gray-300">{{ emp.startDate || '---' }}</td>
                                     <td>
                                         <span :class="{'text-orange-400 font-bold animate-pulse': isDue(emp)}">
                                             {{ getNextDate(emp) }}
                                         </span>
                                     </td>
                                     <td class="no-print flex gap-2">
-                                        <button v-if="isDue(emp)" @click="executeUpgrade(emp)" class="text-green-400 font-bold">تنفيذ</button>
-                                        <button @click="editEmp(emp)" class="text-blue-400">تعديل</button>
-                                        <button @click="deleteEmp(emp.id)" class="text-red-400">حذف</button>
+                                        <button v-if="isDue(emp)" @click="applyUpgrade(emp)" class="text-green-400 hover:scale-110">✔</button>
+                                        <button @click="editEmp(emp)" class="text-blue-400">✎</button>
+                                        <button @click="deleteEmp(emp.id)" class="text-red-400">✖</button>
                                     </td>
                                 </tr>
                             </tbody>
@@ -234,9 +227,10 @@ const { createApp, ref, computed, onMounted } = Vue;
 createApp({
     setup() {
         const isLoggedIn = ref(false);
-        const login = ref({ user: '', pass: '' });
+        const loginForm = ref({ user: '', pass: '' });
         const loginError = ref(false);
-        const currentTable = ref('all');
+        const showStartDate = ref(false);
+        const filterType = ref('all');
         const employees = ref([]);
         const isEdit = ref(false);
         const editId = ref(null);
@@ -244,29 +238,31 @@ createApp({
         const schools = ["روضة الزهور", "الامام الهادي", "بابل", "فجر الخير", "بشائر السلام", "الحكيم", "الايثار", "الشهامه", "الشهيد عماد", "الشهيد ضياء عبد الحسين", "حضارة العراق", "عشتار", "المسجد الاقصى", "النابغة", "الامانة", "الشهيد محمد مجبل", "الفكر النير", "التضامن"];
 
         const form = ref({
-            name: '', fileNo: '', joinDate: '', workplace: 'بابل', degree: 'بكالوريوس', salary: 296,
-            lastDate: '', thanksCount: 0, thanksType: 'manager', penalty: 'none'
+            name: '', fileId: '', startDate: '', workplace: 'بابل', degree: 'بكالوريوس', 
+            salary: 296, prevSalary: 0, prevTitle: '', lastDate: '', 
+            thanksCount: 0, thanksType: 'manager', penalty: 'none'
         });
 
         onMounted(() => {
-            const data = localStorage.getItem('edu_db_v5');
+            const data = localStorage.getItem('rusafa_edu_db_v4');
             if (data) employees.value = JSON.parse(data);
         });
 
         const handleLogin = () => {
-            if (login.value.user === 'yahya' && login.value.pass === '11223344Ee') {
+            if (loginForm.value.user === 'yahya' && loginForm.value.pass === '11223344Ee') {
                 isLoggedIn.value = true;
+                loginError.value = false;
             } else {
                 loginError.value = true;
             }
         };
 
-        const isPromotionPoint = (salary) => [281, 314, 380, 453, 541, 640, 791].includes(salary);
+        const logout = () => { isLoggedIn.value = false; loginForm.value = { user: '', pass: '' }; };
 
         const getTitle = (salary, degree) => {
             let p = "معلم";
-            if(degree === 'بكالوريوس') p = "معلم جامعي";
-            if(degree === 'مرشد') p = "مرشد تربوي";
+            if (degree === 'بكالوريوس') p = "معلم جامعي";
+            if (degree === 'مرشد') p = "مرشد تربوي";
 
             if (salary >= 910) return p + " أقدم أول (1)";
             if (salary >= 723) return p + " أقدم ثاني (2)";
@@ -285,8 +281,8 @@ createApp({
             d.setFullYear(d.getFullYear() + 1);
             
             if (emp.thanksCount > 0) {
-                const step = emp.thanksType === 'minister' ? 6 : 1;
-                d.setMonth(d.getMonth() - (emp.thanksCount * step));
+                const months = emp.thanksType === 'minister' ? 6 : 1;
+                d.setMonth(d.getMonth() - (emp.thanksCount * months));
             }
 
             if (emp.penalty === 'warn1') d.setMonth(d.getMonth() + 3);
@@ -296,52 +292,60 @@ createApp({
             return d.toISOString().split('T')[0];
         };
 
-        const isDue = (emp) => new Date(getNextDate(emp)) <= new Date();
+        const isDue = (emp) => {
+            const next = new Date(getNextDate(emp));
+            return next <= new Date();
+        };
 
-        const filteredList = computed(() => {
-            if (currentTable.value === 'allowance') return employees.value.filter(e => !isPromotionPoint(e.salary));
-            if (currentTable.value === 'promotion') return employees.value.filter(e => isPromotionPoint(e.salary));
-            return employees.value;
-        });
+        const isPromotion = (sal) => [281, 314, 380, 453, 541, 640, 791].includes(sal);
 
-        const executeUpgrade = (emp, bulk = false) => {
+        const applyUpgrade = (emp, silent = false) => {
             let s = emp.salary;
-            const jumps = { 281: 296, 314: 362, 380: 429, 453: 509, 541: 600, 640: 723, 791: 910 };
-
-            if (isPromotionPoint(s)) {
-                s = jumps[s]; // ترفيع قفزي
+            const promoMap = { 281: 296, 314: 362, 380: 429, 453: 509, 541: 600, 640: 723, 791: 910 };
+            
+            const idx = employees.value.findIndex(e => e.id === emp.id);
+            employees.value[idx].prevSalary = emp.salary;
+            employees.value[idx].prevTitle = getTitle(emp.salary, emp.degree);
+            
+            if (isPromotion(s)) {
+                employees.value[idx].salary = promoMap[s];
             } else {
-                // علاوة عرضية
-                if (s >= 910) s += 20;
-                else if (s >= 723) s += 17;
-                else if (s >= 600) s += 10;
-                else if (s >= 509) s += 8;
-                else if (s >= 296) s += 6;
-                else s += 3;
+                let inc = 3;
+                if (s >= 910) inc = 20;
+                else if (s >= 723) inc = 17;
+                else if (s >= 600) inc = 10;
+                else if (s >= 509) inc = 8;
+                else if (s >= 296) inc = 6;
+                employees.value[idx].salary += inc;
             }
 
-            const idx = employees.value.findIndex(e => e.id === emp.id);
-            employees.value[idx].salary = s;
             employees.value[idx].lastDate = getNextDate(emp);
             employees.value[idx].thanksCount = 0;
             employees.value[idx].penalty = 'none';
 
-            if(!bulk) {
+            if (!silent) {
                 saveToLocal();
-                alert("تم التنفيذ");
+                alert("تم تنفيذ الاستحقاق بنجاح");
             }
         };
 
-        const applyBulk = () => {
-            const dueOnes = filteredList.value.filter(e => isDue(e));
-            if(dueOnes.length === 0) return alert("لا يوجد مستحقين في هذا الجدول");
-            dueOnes.forEach(e => executeUpgrade(e, true));
+        const executeBulk = () => {
+            const targets = displayList.value.filter(e => isDue(e));
+            if (targets.length === 0) return alert("لا يوجد مستحقين في القائمة الحالية");
+            targets.forEach(e => applyUpgrade(e, true));
             saveToLocal();
-            alert("تم تنفيذ الكل بنجاح");
+            alert(`تم تنفيذ ${targets.length} استحقاق بنجاح`);
         };
 
+        const displayList = computed(() => {
+            let list = [...employees.value].sort((a,b) => new Date(getNextDate(a)) - new Date(getNextDate(b)));
+            if (filterType.value === 'allowance') return list.filter(e => !isPromotion(e.salary));
+            if (filterType.value === 'promotion') return list.filter(e => isPromotion(e.salary));
+            return list;
+        });
+
         const saveEmployee = () => {
-            if (!form.value.name || !form.value.lastDate) return alert("أكمل البيانات");
+            if (!form.value.name || !form.value.lastDate) return alert("أكمل البيانات المطلوبة");
             if (isEdit.value) {
                 const idx = employees.value.findIndex(e => e.id === editId.value);
                 employees.value[idx] = { ...form.value, id: editId.value };
@@ -352,19 +356,19 @@ createApp({
             resetForm();
         };
 
-        const saveToLocal = () => localStorage.setItem('edu_db_v5', JSON.stringify(employees.value));
+        const saveToLocal = () => localStorage.setItem('rusafa_edu_db_v4', JSON.stringify(employees.value));
         const resetForm = () => {
-            form.value = { name: '', fileNo: '', joinDate: '', workplace: 'بابل', degree: 'بكالوريوس', salary: 296, lastDate: '', thanksCount: 0, thanksType: 'manager', penalty: 'none' };
+            form.value = { name: '', fileId: '', startDate: '', workplace: 'بابل', degree: 'بكالوريوس', salary: 296, prevSalary: 0, prevTitle: '', lastDate: '', thanksCount: 0, thanksType: 'manager', penalty: 'none' };
             isEdit.value = false;
         };
         const editEmp = (e) => { form.value = {...e}; isEdit.value = true; editId.value = e.id; };
-        const deleteEmp = (id) => { if(confirm("حذف؟")) { employees.value = employees.value.filter(e => e.id !== id); saveToLocal(); } };
-        const sortByDate = () => employees.value.sort((a,b) => new Date(getNextDate(a)) - new Date(getNextDate(b)));
+        const deleteEmp = (id) => { if(confirm("حذف الموظف؟")) { employees.value = employees.value.filter(e => e.id !== id); saveToLocal(); } };
 
         return {
-            isLoggedIn, login, loginError, handleLogin, schools, form, employees, currentTable,
-            filteredList, saveEmployee, isEdit, getTitle, getNextDate, isDue, executeUpgrade,
-            applyBulk, editEmp, deleteEmp, sortByDate, todayDate: new Date().toLocaleDateString('ar-IQ'),
+            isLoggedIn, loginForm, loginError, handleLogin, logout, schools, form, employees,
+            displayList, saveEmployee, isEdit, getTitle, getNextDate, isDue, applyUpgrade, 
+            deleteEmp, editEmp, filterType, executeBulk, showStartDate,
+            todayDate: new Date().toLocaleDateString('ar-IQ'),
             printData: () => window.print()
         };
     }
