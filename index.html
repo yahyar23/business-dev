@@ -9,7 +9,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700&display=swap" rel="stylesheet">
     
     <style>
-        body { font-family: 'Cairo', sans-serif; background-color: #0f0a1e; color: white; margin: 0; overflow-x: hidden; }
+        body { font-family: 'Cairo', sans-serif; background-color: #0f0a1e; color: white; margin: 0; }
         .glass-card {
             background: rgba(255, 255, 255, 0.05);
             backdrop-filter: blur(10px);
@@ -25,17 +25,18 @@
             padding: 10px;
             border-radius: 8px;
             appearance: none;
+            width: 100%;
         }
         select option { background-color: #0f0a1e; color: white; }
 
         table { width: 100%; border-collapse: collapse; }
-        th { background: rgba(255,255,255,0.1); padding: 12px; text-align: right; color: #a78bfa; font-size: 0.8rem; }
-        td { padding: 12px; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 0.85rem; }
+        th { background: rgba(255,255,255,0.1); padding: 12px; text-align: right; color: #a78bfa; font-size: 13px; }
+        td { padding: 12px; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 13px; }
         
         .btn { cursor: pointer; padding: 8px 16px; border-radius: 8px; border: none; font-weight: bold; transition: 0.3s; }
         .btn:hover { opacity: 0.8; transform: scale(0.98); }
 
-        .tab-active { border-bottom: 3px solid #a78bfa; color: #a78bfa; font-weight: bold; }
+        .active-tab { border-bottom: 3px solid #a78bfa; color: #a78bfa; font-weight: bold; }
 
         [v-cloak] { display: none; }
 
@@ -45,30 +46,27 @@
             .glass-card { background: transparent !important; border: none !important; backdrop-filter: none !important; }
             th { color: black !important; border-bottom: 2px solid black !important; }
             td { border-bottom: 1px solid #ddd !important; color: black !important; }
+            table { width: 100% !important; border: 1px solid black !important; }
         }
     </style>
 </head>
 <body>
 
 <div id="app" v-cloak>
-    
     <div v-if="!isLoggedIn" class="min-h-screen flex items-center justify-center p-4">
-        <div class="glass-card p-8 w-full max-w-md shadow-2xl">
-            <div class="text-center mb-8">
-                <h2 class="text-2xl font-bold text-blue-400">تسجيل الدخول</h2>
-                <p class="text-gray-400 text-sm mt-2">نظام الاستحقاقات - الرصافة الأولى</p>
-            </div>
+        <div class="glass-card p-8 w-full max-w-md">
+            <h2 class="text-2xl font-bold text-center mb-6 text-blue-400">تسجيل الدخول للنظام</h2>
             <div class="space-y-4">
                 <div>
-                    <label class="block text-xs mb-1">اسم المستخدم</label>
-                    <input v-model="loginForm.username" type="text" class="w-full" placeholder="yahya">
+                    <label class="text-xs block mb-1">اسم المستخدم</label>
+                    <input v-model="login.user" type="text" placeholder="yahya">
                 </div>
                 <div>
-                    <label class="block text-xs mb-1">كلمة المرور</label>
-                    <input v-model="loginForm.password" type="password" class="w-full" placeholder="••••••••">
+                    <label class="text-xs block mb-1">كلمة المرور</label>
+                    <input v-model="login.pass" type="password" placeholder="••••••••">
                 </div>
-                <button @click="handleLogin" class="w-full btn mastercard-gradient py-3 text-lg mt-4 shadow-lg">دخول النظام</button>
-                <p v-if="loginError" class="text-red-400 text-xs text-center mt-2">{{ loginError }}</p>
+                <button @click="handleLogin" class="w-full btn mastercard-gradient py-3">دخول</button>
+                <p v-if="loginError" class="text-red-400 text-center text-xs mt-2 font-bold">خطأ في البيانات!</p>
             </div>
         </div>
     </div>
@@ -77,31 +75,48 @@
         <div class="flex justify-between items-center mb-10 no-print">
             <div>
                 <h1 class="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-blue-400">نظام العلاوات والترفيعات</h1>
-                <p class="text-gray-400 text-sm">قسم الاستحقاقات - مديرية الرصافة الأولى | الموظف: {{ loginForm.username }}</p>
+                <p class="text-gray-400 text-sm">قسم الترفيعات - الرصافة الأولى</p>
             </div>
-            <div class="flex items-center gap-4">
-                <button @click="logout" class="text-xs text-red-400 border border-red-400/30 px-3 py-1 rounded hover:bg-red-400/10">خروج</button>
+            <div class="flex gap-4 items-center">
                 <div class="text-left glass-card p-3">
                     <div class="text-lg font-bold text-blue-400">{{ todayDate }}</div>
                 </div>
+                <button @click="isLoggedIn = false" class="text-red-400 text-xs">خروج</button>
             </div>
         </div>
 
         <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
-            
             <div class="lg:col-span-4 no-print">
                 <div class="glass-card p-6 sticky top-5">
                     <h3 class="text-lg font-bold mb-4 border-b border-white/10 pb-2 text-purple-300">إضافة موظف جديد</h3>
                     <div class="space-y-4">
+                        <div class="grid grid-cols-2 gap-2">
+                            <div>
+                                <label class="text-[10px] block mb-1">رقم الإضبارة</label>
+                                <input v-model="form.fileNo" type="text" placeholder="0000">
+                            </div>
+                            <div>
+                                <label class="text-[10px] block mb-1">تاريخ المباشرة</label>
+                                <input v-model="form.joinDate" type="date">
+                            </div>
+                        </div>
+
                         <div>
                             <label class="text-xs block mb-1">الاسم الرباعي</label>
-                            <input v-model="form.name" type="text" class="w-full" placeholder="أدخل الاسم">
+                            <input v-model="form.name" type="text" placeholder="أدخل الاسم">
+                        </div>
+
+                        <div>
+                            <label class="text-xs block mb-1">مكان العمل (المدرسة)</label>
+                            <select v-model="form.workplace">
+                                <option v-for="school in schools" :key="school" :value="school">{{ school }}</option>
+                            </select>
                         </div>
                         
                         <div class="grid grid-cols-2 gap-2">
                             <div>
                                 <label class="text-xs block mb-1">الشهادة</label>
-                                <select v-model="form.degree" class="w-full">
+                                <select v-model="form.degree">
                                     <option value="دبلوم">دبلوم (معلم)</option>
                                     <option value="بكالوريوس">بكالوريوس (جامعي)</option>
                                     <option value="مرشد">مرشد تربوي</option>
@@ -109,34 +124,40 @@
                             </div>
                             <div>
                                 <label class="text-xs block mb-1">الراتب الحالي</label>
-                                <input v-model.number="form.salary" type="number" class="w-full">
+                                <input v-model.number="form.salary" type="number">
                             </div>
                         </div>
 
                         <div>
                             <label class="text-xs block mb-1">تاريخ الاستحقاق السابق</label>
-                            <input v-model="form.lastDate" type="date" class="w-full">
+                            <input v-model="form.lastDate" type="date">
                         </div>
 
                         <div class="p-3 bg-blue-500/10 rounded-lg border border-blue-500/20">
-                            <label class="text-xs text-blue-300 block mb-2 font-bold text-center">نظام كتب الشكر</label>
+                            <label class="text-xs text-blue-300 block mb-2 font-bold text-center">كتب الشكر (حد أقصى 3)</label>
                             <div class="grid grid-cols-2 gap-2">
-                                <select v-model.number="form.thanksCount" class="w-full text-xs p-1">
-                                    <option value="0">بدون شكر</option>
-                                    <option value="1">كتاب 1</option>
-                                    <option value="2">كتابان</option>
-                                    <option value="3">3 كتب</option>
-                                </select>
-                                <select v-if="form.thanksCount > 0" v-model="form.thanksType" class="w-full text-xs p-1">
-                                    <option value="manager">مدير عام</option>
-                                    <option value="minister">وزير</option>
-                                </select>
+                                <div>
+                                    <label class="text-[10px] block mb-1">عدد الكتب</label>
+                                    <select v-model.number="form.thanksCount" class="text-xs p-1">
+                                        <option value="0">0</option>
+                                        <option value="1">1</option>
+                                        <option value="2">2</option>
+                                        <option value="3">3</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="text-[10px] block mb-1">الجهة</label>
+                                    <select v-model="form.thanksType" class="text-xs p-1">
+                                        <option value="manager">مدير عام (-1 شهر)</option>
+                                        <option value="minister">وزير (-6 أشهر)</option>
+                                    </select>
+                                </div>
                             </div>
                         </div>
 
                         <div class="p-3 bg-red-500/10 rounded-lg border border-red-500/20">
                             <label class="text-xs text-red-400 block mb-1 font-bold">العقوبات</label>
-                            <select v-model="form.penalty" class="text-xs w-full p-1">
+                            <select v-model="form.penalty" class="text-xs p-1">
                                 <option value="none">لا يوجد</option>
                                 <option value="warn1">لفت نظر (+3 أشهر)</option>
                                 <option value="warn2">إنذار (+6 أشهر)</option>
@@ -144,27 +165,25 @@
                             </select>
                         </div>
 
-                        <button @click="saveEmployee" class="w-full btn mastercard-gradient py-4 text-lg shadow-lg">
-                            {{ isEdit ? 'تحديث البيانات' : 'حفظ الموظف' }}
+                        <button @click="saveEmployee" class="w-full btn mastercard-gradient py-3 text-lg">
+                            {{ isEdit ? 'تحديث' : 'حفظ' }}
                         </button>
                     </div>
                 </div>
             </div>
 
             <div class="lg:col-span-8">
-                <div class="glass-card p-6 min-h-[600px]">
-                    
+                <div class="glass-card p-6">
                     <div class="flex flex-wrap justify-between items-center mb-6 no-print gap-4">
                         <div class="flex gap-4 border-b border-white/10">
-                            <button @click="viewMode = 'all'" :class="{'tab-active': viewMode === 'all'}" class="pb-2 px-2 text-xs">الكل</button>
-                            <button @click="viewMode = 'allowance'" :class="{'tab-active': viewMode === 'allowance'}" class="pb-2 px-2 text-xs text-green-400">جدول العلاوات</button>
-                            <button @click="viewMode = 'promotion'" :class="{'tab-active': viewMode === 'promotion'}" class="pb-2 px-2 text-xs text-orange-400">جدول الترفيعات</button>
+                            <button @click="currentTable = 'all'" :class="{'active-tab': currentTable === 'all'}">الكل</button>
+                            <button @click="currentTable = 'allowance'" :class="{'active-tab': currentTable === 'allowance'}">جدول العلاوات</button>
+                            <button @click="currentTable = 'promotion'" :class="{'active-tab': currentTable === 'promotion'}">جدول الترفيعات</button>
                         </div>
-                        
                         <div class="flex gap-2">
-                            <button @click="sortByDate" class="btn bg-indigo-600 text-[10px]">فرز حسب التاريخ</button>
-                            <button @click="applyBulkAction" class="btn bg-red-600 text-[10px]">تنفيذ شامل للجدول</button>
-                            <button @click="printData" class="btn bg-gray-700 text-[10px]">🖨️ طباعة</button>
+                            <button @click="sortByDate" class="btn bg-indigo-600 text-[10px]">فرز التواريخ</button>
+                            <button @click="applyBulk" class="btn bg-green-600 text-[10px]">تنفيذ شامل للجدول</button>
+                            <button @click="printData" class="btn bg-gray-700 text-[10px]">طباعة</button>
                         </div>
                     </div>
 
@@ -172,18 +191,20 @@
                         <table>
                             <thead>
                                 <tr>
-                                    <th>الموظف</th>
-                                    <th>العنوان</th>
+                                    <th>الإضبارة</th>
+                                    <th>الموظف / المدرسة</th>
+                                    <th>العنوان الوظيفي</th>
                                     <th>الراتب</th>
                                     <th>الاستحقاق</th>
-                                    <th class="no-print">النوع / الإجراء</th>
+                                    <th class="no-print">إجراءات</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                <tr v-for="emp in filteredList" :key="emp.id" :class="{'bg-green-500/5': isDue(emp)}">
+                                <tr v-for="emp in filteredList" :key="emp.id" :class="{'bg-green-500/10': isDue(emp)}">
+                                    <td class="text-gray-400">#{{ emp.fileNo }}</td>
                                     <td>
-                                        <div class="font-bold text-blue-300">{{ emp.name }}</div>
-                                        <div class="text-[10px] text-gray-400">{{ emp.degree }}</div>
+                                        <div class="font-bold">{{ emp.name }}</div>
+                                        <div class="text-[10px] text-blue-300">{{ emp.workplace }}</div>
                                     </td>
                                     <td>{{ getTitle(emp.salary, emp.degree) }}</td>
                                     <td class="text-yellow-400 font-bold">{{ emp.salary }}</td>
@@ -192,27 +213,17 @@
                                             {{ getNextDate(emp) }}
                                         </span>
                                     </td>
-                                    <td class="no-print">
-                                        <div class="flex flex-col gap-1">
-                                            <span class="text-[9px] font-bold text-center px-1 rounded border" 
-                                                  :class="isPromotion(emp.salary) ? 'border-orange-500 text-orange-400' : 'border-green-500 text-green-400'">
-                                                {{ isPromotion(emp.salary) ? 'ترفيع' : 'علاوة' }}
-                                            </span>
-                                            <div class="flex gap-2">
-                                                <button v-if="isDue(emp)" @click="applyUpgrade(emp)" class="text-green-400 text-[10px] underline">تنفيذ</button>
-                                                <button @click="editEmp(emp)" class="text-blue-400 text-[10px] underline">تعديل</button>
-                                                <button @click="deleteEmp(emp.id)" class="text-red-400 text-[10px] underline">حذف</button>
-                                            </div>
-                                        </div>
+                                    <td class="no-print flex gap-2">
+                                        <button v-if="isDue(emp)" @click="executeUpgrade(emp)" class="text-green-400 font-bold">تنفيذ</button>
+                                        <button @click="editEmp(emp)" class="text-blue-400">تعديل</button>
+                                        <button @click="deleteEmp(emp.id)" class="text-red-400">حذف</button>
                                     </td>
                                 </tr>
                             </tbody>
                         </table>
-                        <div v-if="filteredList.length === 0" class="text-center py-10 text-gray-500 text-xs">لا توجد بيانات لعرضها في هذا الجدول</div>
                     </div>
                 </div>
             </div>
-
         </div>
     </div>
 </div>
@@ -223,70 +234,61 @@ const { createApp, ref, computed, onMounted } = Vue;
 createApp({
     setup() {
         const isLoggedIn = ref(false);
-        const loginForm = ref({ username: '', password: '' });
-        const loginError = ref('');
-        const viewMode = ref('all'); 
+        const login = ref({ user: '', pass: '' });
+        const loginError = ref(false);
+        const currentTable = ref('all');
         const employees = ref([]);
         const isEdit = ref(false);
         const editId = ref(null);
 
+        const schools = ["روضة الزهور", "الامام الهادي", "بابل", "فجر الخير", "بشائر السلام", "الحكيم", "الايثار", "الشهامه", "الشهيد عماد", "الشهيد ضياء عبد الحسين", "حضارة العراق", "عشتار", "المسجد الاقصى", "النابغة", "الامانة", "الشهيد محمد مجبل", "الفكر النير", "التضامن"];
+
         const form = ref({
-            name: '', degree: 'بكالوريوس', salary: 296,
+            name: '', fileNo: '', joinDate: '', workplace: 'بابل', degree: 'بكالوريوس', salary: 296,
             lastDate: '', thanksCount: 0, thanksType: 'manager', penalty: 'none'
         });
 
         onMounted(() => {
-            const auth = localStorage.getItem('edu_auth_session');
-            if (auth === 'true') isLoggedIn.value = true;
-            
-            const data = localStorage.getItem('edu_sys_final_db');
+            const data = localStorage.getItem('edu_db_v5');
             if (data) employees.value = JSON.parse(data);
         });
 
-        // نظام تسجيل الدخول
         const handleLogin = () => {
-            if (loginForm.value.username === 'yahya' && loginForm.value.password === '11223344Ee') {
+            if (login.value.user === 'yahya' && login.value.pass === '11223344Ee') {
                 isLoggedIn.value = true;
-                localStorage.setItem('edu_auth_session', 'true');
-                loginError.value = '';
             } else {
-                loginError.value = 'اسم المستخدم أو كلمة المرور غير صحيحة';
+                loginError.value = true;
             }
         };
 
-        const logout = () => {
-            isLoggedIn.value = false;
-            localStorage.removeItem('edu_auth_session');
-        };
-
-        // منطق الترفيعات القفزية والعناوين
-        const isPromotion = (salary) => {
-            const promoSalaries = [281, 314, 380, 453, 541, 640, 791];
-            return promoSalaries.includes(salary);
-        };
+        const isPromotionPoint = (salary) => [281, 314, 380, 453, 541, 640, 791].includes(salary);
 
         const getTitle = (salary, degree) => {
-            const prefix = "معلم";
-            if (salary >= 910) return prefix + " أقدم أول (1)";
-            if (salary >= 723) return prefix + " أقدم ثاني (2)";
-            if (salary >= 600) return prefix + " أقدم (3)";
-            if (salary >= 509) return prefix + " أول (4)";
-            if (salary >= 429) return prefix + " ثاني (5)";
-            if (salary >= 362) return prefix + " ثالث (6)";
-            if (salary >= 296) return prefix + " رابع (7)";
-            if (salary >= 220) return prefix + " خامس (8)";
-            return prefix + " مساعد (9)";
+            let p = "معلم";
+            if(degree === 'بكالوريوس') p = "معلم جامعي";
+            if(degree === 'مرشد') p = "مرشد تربوي";
+
+            if (salary >= 910) return p + " أقدم أول (1)";
+            if (salary >= 723) return p + " أقدم ثاني (2)";
+            if (salary >= 600) return p + " أقدم (3)";
+            if (salary >= 509) return p + " أول (4)";
+            if (salary >= 429) return p + " ثاني (5)";
+            if (salary >= 362) return p + " ثالث (6)";
+            if (salary >= 296) return p + " رابع (7)";
+            if (salary >= 220) return p + " خامس (8)";
+            return p + " مساعد (9)";
         };
 
         const getNextDate = (emp) => {
             if (!emp.lastDate) return '--';
             let d = new Date(emp.lastDate);
             d.setFullYear(d.getFullYear() + 1);
-
+            
             if (emp.thanksCount > 0) {
-                const m = emp.thanksType === 'minister' ? (emp.thanksCount * 6) : (emp.thanksCount * 1);
-                d.setMonth(d.getMonth() - m);
+                const step = emp.thanksType === 'minister' ? 6 : 1;
+                d.setMonth(d.getMonth() - (emp.thanksCount * step));
             }
+
             if (emp.penalty === 'warn1') d.setMonth(d.getMonth() + 3);
             if (emp.penalty === 'warn2') d.setMonth(d.getMonth() + 6);
             if (emp.penalty === 'warn3') d.setFullYear(d.getFullYear() + 1);
@@ -294,73 +296,48 @@ createApp({
             return d.toISOString().split('T')[0];
         };
 
-        const isDue = (emp) => {
-            if (!emp.lastDate) return false;
-            const next = new Date(getNextDate(emp));
-            const today = new Date();
-            return next <= today;
-        };
+        const isDue = (emp) => new Date(getNextDate(emp)) <= new Date();
 
-        // الفرز المتقدم للجداول
         const filteredList = computed(() => {
-            let list = [...employees.value];
-            if (viewMode.value === 'allowance') {
-                list = list.filter(e => !isPromotion(e.salary));
-            } else if (viewMode.value === 'promotion') {
-                list = list.filter(e => isPromotion(e.salary));
-            }
-            return list;
+            if (currentTable.value === 'allowance') return employees.value.filter(e => !isPromotionPoint(e.salary));
+            if (currentTable.value === 'promotion') return employees.value.filter(e => isPromotionPoint(e.salary));
+            return employees.value;
         });
 
-        const sortByDate = () => {
-            employees.value.sort((a, b) => new Date(getNextDate(a)) - new Date(getNextDate(b)));
-        };
-
-        // دالة التنفيذ مع مراعاة القفزات المالية
-        const applyUpgrade = (emp, isBulk = false) => {
-            const idx = employees.value.findIndex(e => e.id === emp.id);
+        const executeUpgrade = (emp, bulk = false) => {
             let s = emp.salary;
+            const jumps = { 281: 296, 314: 362, 380: 429, 453: 509, 541: 600, 640: 723, 791: 910 };
 
-            if (isPromotion(s)) {
-                // منطق الترفيع القفزي
-                if (s === 281) s = 296;
-                else if (s === 314) s = 362;
-                else if (s === 380) s = 429;
-                else if (s === 453) s = 509;
-                else if (s === 541) s = 600;
-                else if (s === 640) s = 723;
-                else if (s === 791) s = 910;
+            if (isPromotionPoint(s)) {
+                s = jumps[s]; // ترفيع قفزي
             } else {
-                // منطق العلاوة السنوية
+                // علاوة عرضية
                 if (s >= 910) s += 20;
                 else if (s >= 723) s += 17;
                 else if (s >= 600) s += 10;
                 else if (s >= 509) s += 8;
                 else if (s >= 296) s += 6;
-                else if (s >= 220) s += 3;
                 else s += 3;
             }
 
+            const idx = employees.value.findIndex(e => e.id === emp.id);
             employees.value[idx].salary = s;
             employees.value[idx].lastDate = getNextDate(emp);
             employees.value[idx].thanksCount = 0;
             employees.value[idx].penalty = 'none';
 
-            if (!isBulk) {
-                localStorage.setItem('edu_sys_final_db', JSON.stringify(employees.value));
-                alert(`تم تحديث الموظف بنجاح. الراتب الجديد: ${s}`);
+            if(!bulk) {
+                saveToLocal();
+                alert("تم التنفيذ");
             }
         };
 
-        const applyBulkAction = () => {
-            const targets = filteredList.value.filter(e => isDue(e));
-            if (targets.length === 0) return alert("لا يوجد مستحقين حالياً في هذا الجدول.");
-            
-            if (confirm(`هل أنت متأكد من تنفيذ ${targets.length} استحقاق دفعة واحدة؟`)) {
-                targets.forEach(e => applyUpgrade(e, true));
-                localStorage.setItem('edu_sys_final_db', JSON.stringify(employees.value));
-                alert("تم التنفيذ الشامل بنجاح.");
-            }
+        const applyBulk = () => {
+            const dueOnes = filteredList.value.filter(e => isDue(e));
+            if(dueOnes.length === 0) return alert("لا يوجد مستحقين في هذا الجدول");
+            dueOnes.forEach(e => executeUpgrade(e, true));
+            saveToLocal();
+            alert("تم تنفيذ الكل بنجاح");
         };
 
         const saveEmployee = () => {
@@ -371,35 +348,23 @@ createApp({
             } else {
                 employees.value.push({ ...form.value, id: Date.now() });
             }
-            localStorage.setItem('edu_sys_final_db', JSON.stringify(employees.value));
+            saveToLocal();
             resetForm();
         };
 
+        const saveToLocal = () => localStorage.setItem('edu_db_v5', JSON.stringify(employees.value));
         const resetForm = () => {
-            form.value = { name: '', degree: 'بكالوريوس', salary: 296, lastDate: '', thanksCount: 0, thanksType: 'manager', penalty: 'none' };
+            form.value = { name: '', fileNo: '', joinDate: '', workplace: 'بابل', degree: 'بكالوريوس', salary: 296, lastDate: '', thanksCount: 0, thanksType: 'manager', penalty: 'none' };
             isEdit.value = false;
-            editId.value = null;
         };
-
-        const editEmp = (emp) => {
-            form.value = { ...emp };
-            isEdit.value = true;
-            editId.value = emp.id;
-        };
-
-        const deleteEmp = (id) => {
-            if(confirm("حذف الموظف؟")) {
-                employees.value = employees.value.filter(e => e.id !== id);
-                localStorage.setItem('edu_sys_final_db', JSON.stringify(employees.value));
-            }
-        };
+        const editEmp = (e) => { form.value = {...e}; isEdit.value = true; editId.value = e.id; };
+        const deleteEmp = (id) => { if(confirm("حذف؟")) { employees.value = employees.value.filter(e => e.id !== id); saveToLocal(); } };
+        const sortByDate = () => employees.value.sort((a,b) => new Date(getNextDate(a)) - new Date(getNextDate(b)));
 
         return {
-            isLoggedIn, loginForm, loginError, handleLogin, logout,
-            form, employees, filteredList, viewMode, saveEmployee, isEdit, 
-            getTitle, getNextDate, isDue, applyUpgrade, deleteEmp, editEmp, 
-            isPromotion, sortByDate, applyBulkAction,
-            todayDate: new Date().toLocaleDateString('ar-IQ'),
+            isLoggedIn, login, loginError, handleLogin, schools, form, employees, currentTable,
+            filteredList, saveEmployee, isEdit, getTitle, getNextDate, isDue, executeUpgrade,
+            applyBulk, editEmp, deleteEmp, sortByDate, todayDate: new Date().toLocaleDateString('ar-IQ'),
             printData: () => window.print()
         };
     }
