@@ -50,18 +50,18 @@
 <body>
 
 <div id="app" v-cloak>
-    <div v-if="dueNextMonthCount > 0" class="fixed top-5 left-1/2 -translate-x-1/2 z-50 w-full max-w-2xl px-4 no-print">
-        <div class="bg-blue-600/90 backdrop-blur-md text-white p-4 rounded-xl shadow-2xl border border-blue-400 flex justify-between items-center animate-pulse">
+    <div v-if="nextMonthDueCount > 0" class="fixed top-5 left-1/2 -translate-x-1/2 z-50 w-full max-w-2xl px-4 no-print">
+        <div class="bg-gradient-to-r from-orange-600 to-red-600 backdrop-blur-md text-white p-4 rounded-xl shadow-2xl border border-orange-400 flex justify-between items-center animate-pulse">
             <div class="flex items-center gap-3">
                 <span class="text-2xl">🔔</span>
                 <div>
-                    <div class="font-bold text-lg">يوجد {{ dueNextMonthCount }} موظف يستحقون العلاوة قريباً</div>
-                    <div class="text-xs text-blue-100">بناءً على تاريخ اليوم {{ todayDate }}، هؤلاء الموظفون استحقوا أو سيستحقون خلال الشهر القادم.</div>
+                    <div class="font-bold text-lg">تنبيه استحقاقات الشهر القادم</div>
+                    <div class="text-sm opacity-90">يوجد عدد ({{ nextMonthDueCount }}) موظفين يستحقون العلاوة في الشهر القادم.</div>
                 </div>
             </div>
             <div class="flex gap-2">
-                <button @click="filterToNextMonth" class="bg-white text-blue-700 px-3 py-1 rounded-lg font-bold text-sm">عرض المستحقين</button>
-                <button @click="dismissAlert" class="bg-blue-800/50 hover:bg-white/20 rounded-full w-8 h-8">✕</button>
+                <button @click="filterType = 'nextMonth'" class="bg-white text-orange-700 px-4 py-2 rounded-lg font-bold text-sm hover:bg-orange-100">عرض المستحقين</button>
+                <button @click="nextMonthDueCount = 0" class="bg-black/20 hover:bg-black/40 rounded-full w-8 h-8 flex items-center justify-center">✕</button>
             </div>
         </div>
     </div>
@@ -181,23 +181,26 @@
                         <button @click="filterType = 'all'" :class="filterType === 'all' ? 'bg-purple-600' : 'bg-gray-700'" class="btn text-[10px]">الكل</button>
                         <button @click="filterType = 'allowance'" :class="filterType === 'allowance' ? 'bg-blue-600' : 'bg-gray-700'" class="btn text-[10px]">العلاوات</button>
                         <button @click="filterType = 'promotion'" :class="filterType === 'promotion' ? 'bg-orange-600' : 'bg-gray-700'" class="btn text-[10px]">الترفيعات</button>
-                        <button @click="filterType = 'dueNext'" :class="filterType === 'dueNext' ? 'bg-red-600 animate-pulse' : 'bg-gray-700'" class="btn text-[10px]">مستحقي الشهر القادم</button>
+                        <button @click="filterType = 'nextMonth'" :class="filterType === 'nextMonth' ? 'bg-red-600' : 'bg-gray-700'" class="btn text-[10px]">مستحقي الشهر القادم</button>
                     </div>
                 </div>
 
                 <div class="glass-card p-6">
                     <div class="flex flex-wrap justify-between items-center mb-6 no-print gap-4">
+                        <div class="flex gap-2 text-xs font-bold text-blue-300">
+                             عدد الموظفين: {{ filteredList.length }}
+                        </div>
                         <div class="flex gap-2">
                              <button @click="showStartDate = !showStartDate" class="btn bg-teal-600 text-[10px]">
                                 {{ showStartDate ? 'إخفاء المباشرة' : 'إظهار المباشرة' }}
                             </button>
-                            <button @click="executeBulk" class="btn bg-green-600 text-[10px]">تنفيذ الجماعي (للمعروضين)</button>
+                            <button @click="executeBulk" class="btn bg-green-600 text-[10px]">تنفيذ الاستحقاق للمفلترين</button>
                             <button @click="printData" class="btn bg-gray-600 text-[10px]">🖨️ طباعة</button>
                         </div>
                     </div>
 
                     <div class="overflow-x-auto">
-                        <table>
+                        <table id="printableTable">
                             <thead>
                                 <tr>
                                     <th>الإضبارة</th>
@@ -226,18 +229,15 @@
                                     </td>
                                     <td v-if="showStartDate" class="text-[11px] text-gray-300">{{ emp.startDate || '---' }}</td>
                                     <td>
-                                        <span :class="{'text-orange-400 font-bold animate-pulse': isDue(emp)}">
+                                        <span :class="{'text-orange-400 font-bold animate-pulse': isDue(emp), 'text-blue-400': isNextMonth(emp)}">
                                             {{ getNextDate(emp) }}
                                         </span>
                                     </td>
                                     <td class="no-print flex gap-2">
-                                        <button v-if="isDue(emp) || isDueSoon(emp)" @click="applyUpgrade(emp)" title="تنفيذ الاستحقاق" class="text-green-400 hover:scale-110">✔</button>
+                                        <button v-if="canUpgrade(emp)" @click="applyUpgrade(emp)" class="text-green-400 hover:scale-110" title="تنفيذ الاستحقاق">✔</button>
                                         <button @click="editEmp(emp)" class="text-blue-400">✎</button>
                                         <button @click="deleteEmp(emp.id)" class="text-red-400">✖</button>
                                     </td>
-                                </tr>
-                                <tr v-if="paginatedList.length === 0">
-                                    <td colspan="8" class="text-center py-10 text-gray-500 italic">لا توجد بيانات تطابق البحث أو الفلتر</td>
                                 </tr>
                             </tbody>
                         </table>
@@ -245,7 +245,7 @@
 
                     <div class="mt-6 flex justify-between items-center no-print border-t border-white/10 pt-4">
                         <div class="text-xs text-gray-400">
-                            عرض {{ paginatedList.length }} من أصل {{ filteredList.length }} موظف
+                            عرض {{ paginatedList.length }} من {{ filteredList.length }}
                         </div>
                         <div class="flex gap-2">
                             <button @click="currentPage--" :disabled="currentPage === 1" class="btn bg-gray-700 text-xs disabled:opacity-30">السابق</button>
@@ -272,11 +272,10 @@ createApp({
         const employees = ref([]);
         const isEdit = ref(false);
         const editId = ref(null);
-        const showAlert = ref(true);
-        
         const searchQuery = ref('');
         const currentPage = ref(1);
         const pageSize = ref(10);
+        const nextMonthDueCount = ref(0);
 
         const schools = ["روضة الزهور", "الامام الهادي", "بابل", "فجر الخير", "بشائر السلام", "الحكيم", "الايثار", "الشهامه", "الشهيد عماد", "الشهيد ضياء عبد الحسين", "حضارة العراق", "عشتار", "المسجد الاقصى", "النابغة", "الامانة", "الشهيد محمد مجبل", "الفكر النير", "التضامن"];
 
@@ -289,8 +288,21 @@ createApp({
         onMounted(() => {
             const data = localStorage.getItem('rusafa_edu_db_v4');
             if (data) employees.value = JSON.parse(data);
+            calculateNextMonthDues();
         });
 
+        const calculateNextMonthDues = () => {
+            const now = new Date();
+            const nextMonth = (now.getMonth() + 1) % 12;
+            const nextYear = nextMonth === 0 ? now.getFullYear() + 1 : now.getFullYear();
+            
+            nextMonthDueCount.value = employees.value.filter(emp => {
+                const nextDate = new Date(getNextDate(emp));
+                return nextDate.getMonth() === nextMonth && nextDate.getFullYear() === nextYear;
+            }).length;
+        };
+
+        watch(employees, () => calculateNextMonthDues(), { deep: true });
         watch(searchQuery, () => currentPage.value = 1);
         watch(filterType, () => currentPage.value = 1);
 
@@ -343,34 +355,31 @@ createApp({
             return next <= new Date();
         };
 
-        // دالة جديدة لفحص الاستحقاق القريب (بعد شهر أو قبل 10 أيام من الشهر القادم)
-        const isDueSoon = (emp) => {
+        const isNextMonth = (emp) => {
             const next = new Date(getNextDate(emp));
-            const today = new Date();
-            const limit = new Date();
-            // إضافة شهر و 10 أيام للمجال الزمني للتنبيه
-            limit.setMonth(limit.getMonth() + 1);
-            limit.setDate(limit.getDate() + 10);
+            const now = new Date();
+            const nextMonth = (now.getMonth() + 1) % 12;
+            const nextYear = nextMonth === 0 ? now.getFullYear() + 1 : now.getFullYear();
+            return next.getMonth() === nextMonth && next.getFullYear() === nextYear;
+        };
+
+        // دالة التحكم في زر التنفيذ: متاح إذا استحق الموظف أو إذا كان الشهر القادم واليوم 20 فما فوق
+        const canUpgrade = (emp) => {
+            if (isDue(emp)) return true;
             
-            return next <= limit;
-        };
-
-        // حساب عدد المستحقين للتنبيه العلوي
-        const dueNextMonthCount = computed(() => {
-            return employees.value.filter(e => isDueSoon(e)).length;
-        });
-
-        const filterToNextMonth = () => {
-            filterType.value = 'dueNext';
-        };
-
-        const dismissAlert = () => {
-            showAlert.value = false;
+            const now = new Date();
+            // السماح بالتنفيذ للمستحقين في الشهر القادم بدءاً من يوم 20
+            if (now.getDate() >= 20 && isNextMonth(emp)) {
+                return true;
+            }
+            return false;
         };
 
         const isPromotion = (sal) => [281, 314, 380, 453, 541, 640, 791].includes(sal);
 
         const applyUpgrade = (emp, silent = false) => {
+            if (!canUpgrade(emp)) return alert("لم يحن موعد الاستحقاق بعد (يجب الانتظار ليوم 20 من الشهر الحالي لتمشية معاملات الشهر القادم)");
+
             let s = emp.salary;
             const promoMap = { 281: 296, 314: 362, 380: 429, 453: 509, 541: 600, 640: 723, 791: 910 };
             
@@ -401,9 +410,9 @@ createApp({
         };
 
         const executeBulk = () => {
-            const targets = filteredList.value.filter(e => isDue(e) || isDueSoon(e));
-            if (targets.length === 0) return alert("لا يوجد مستحقين في القائمة الحالية");
-            if (confirm(`هل أنت متأكد من تنفيذ الاستحقاق لـ ${targets.length} موظف؟`)) {
+            const targets = filteredList.value.filter(e => canUpgrade(e));
+            if (targets.length === 0) return alert("لا يوجد موظفين مستحقين للتنفيذ حالياً");
+            if (confirm(`هل أنت متأكد من تنفيذ الاستحقاق لعدد ${targets.length} موظف؟`)) {
                 targets.forEach(e => applyUpgrade(e, true));
                 saveToLocal();
                 alert(`تم تنفيذ ${targets.length} استحقاق بنجاح`);
@@ -415,7 +424,7 @@ createApp({
             
             if (filterType.value === 'allowance') list = list.filter(e => !isPromotion(e.salary));
             if (filterType.value === 'promotion') list = list.filter(e => isPromotion(e.salary));
-            if (filterType.value === 'dueNext') list = list.filter(e => isDueSoon(e));
+            if (filterType.value === 'nextMonth') list = list.filter(e => isNextMonth(e));
             
             if (searchQuery.value) {
                 const q = searchQuery.value.toLowerCase();
@@ -450,14 +459,14 @@ createApp({
             form.value = { name: '', fileId: '', startDate: '', workplace: 'بابل', degree: 'بكالوريوس', salary: 296, prevSalary: 0, prevTitle: '', lastDate: '', thanksCount: 0, thanksType: 'manager', penalty: 'none' };
             isEdit.value = false;
         };
-        const editEmp = (e) => { form.value = {...e}; isEdit.value = true; editId.value = e.id; window.scrollTo(0,0); };
-        const deleteEmp = (id) => { if(confirm("حذف الموظف نهائياً؟")) { employees.value = employees.value.filter(e => e.id !== id); saveToLocal(); } };
+        const editEmp = (e) => { form.value = {...e}; isEdit.value = true; editId.value = e.id; };
+        const deleteEmp = (id) => { if(confirm("حذف الموظف؟")) { employees.value = employees.value.filter(e => e.id !== id); saveToLocal(); } };
 
         return {
             isLoggedIn, loginForm, loginError, handleLogin, logout, schools, form, employees,
-            filteredList, paginatedList, saveEmployee, isEdit, getTitle, getNextDate, isDue, isDueSoon, applyUpgrade, 
-            deleteEmp, editEmp, filterType, executeBulk, showStartDate, searchQuery, currentPage, pageSize, 
-            showAlert, dueNextMonthCount, filterToNextMonth, dismissAlert,
+            filteredList, paginatedList, saveEmployee, isEdit, getTitle, getNextDate, isDue, applyUpgrade, 
+            deleteEmp, editEmp, filterType, executeBulk, showStartDate, searchQuery, currentPage, pageSize,
+            nextMonthDueCount, isNextMonth, canUpgrade,
             todayDate: new Date().toLocaleDateString('ar-IQ'),
             printData: () => window.print()
         };
