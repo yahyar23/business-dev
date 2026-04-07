@@ -172,19 +172,39 @@
             </div>
 
             <div class="lg:col-span-8">
-                <div class="glass-card p-4 mb-6 no-print flex flex-col md:flex-row gap-4 items-center">
-                    <div class="relative w-full md:w-1/2">
-                        <input v-model="searchQuery" type="text" placeholder="بحث بالاسم أو رقم الإضبارة..." class="w-full pr-10">
-                        <span class="absolute right-3 top-3 text-gray-500">🔍</span>
+                <!-- بطاقة النسخ الاحتياطي والاستعادة - أعلى أدوات البحث والتصفية -->
+                <div class="glass-card p-4 mb-6 no-print">
+                    <div class="flex flex-wrap gap-3 mb-4 pb-3 border-b border-white/10 justify-between items-center">
+                        <div class="flex gap-2">
+                            <button @click="exportBackup" class="btn bg-emerald-600 hover:bg-emerald-700 text-white text-sm flex items-center gap-1 shadow-md transition-all">
+                                📥 تصدير JSON (نسخة احتياطية)
+                            </button>
+                            <label class="btn bg-amber-600 hover:bg-amber-700 text-white text-sm flex items-center gap-1 cursor-pointer shadow-md transition-all">
+                                📂 استيراد JSON
+                                <input type="file" accept=".json" @change="importBackup" class="hidden">
+                            </label>
+                        </div>
+                        <div class="text-xs text-gray-400 bg-white/5 px-3 py-1 rounded-full">
+                            ⭐ احتفظ بنسخة من بياناتك آمنة
+                        </div>
                     </div>
-                    <div class="flex gap-2 w-full md:w-auto overflow-x-auto">
-                        <button @click="filterType = 'all'" :class="filterType === 'all' ? 'bg-purple-600' : 'bg-gray-700'" class="btn text-[10px]">الكل</button>
-                        <button @click="filterType = 'allowance'" :class="filterType === 'allowance' ? 'bg-blue-600' : 'bg-gray-700'" class="btn text-[10px]">العلاوات</button>
-                        <button @click="filterType = 'promotion'" :class="filterType === 'promotion' ? 'bg-orange-600' : 'bg-gray-700'" class="btn text-[10px]">الترفيعات</button>
-                        <button @click="filterType = 'nextMonth'" :class="filterType === 'nextMonth' ? 'bg-red-600' : 'bg-gray-700'" class="btn text-[10px]">مستحقي الشهر القادم</button>
+
+                    <!-- شريط البحث والفلترة (القسم الأصلي) -->
+                    <div class="flex flex-col md:flex-row gap-4 items-center">
+                        <div class="relative w-full md:w-1/2">
+                            <input v-model="searchQuery" type="text" placeholder="بحث بالاسم أو رقم الإضبارة..." class="w-full pr-10">
+                            <span class="absolute right-3 top-3 text-gray-500">🔍</span>
+                        </div>
+                        <div class="flex gap-2 w-full md:w-auto overflow-x-auto">
+                            <button @click="filterType = 'all'" :class="filterType === 'all' ? 'bg-purple-600' : 'bg-gray-700'" class="btn text-[10px]">الكل</button>
+                            <button @click="filterType = 'allowance'" :class="filterType === 'allowance' ? 'bg-blue-600' : 'bg-gray-700'" class="btn text-[10px]">العلاوات</button>
+                            <button @click="filterType = 'promotion'" :class="filterType === 'promotion' ? 'bg-orange-600' : 'bg-gray-700'" class="btn text-[10px]">الترفيعات</button>
+                            <button @click="filterType = 'nextMonth'" :class="filterType === 'nextMonth' ? 'bg-red-600' : 'bg-gray-700'" class="btn text-[10px]">مستحقي الشهر القادم</button>
+                        </div>
                     </div>
                 </div>
 
+                <!-- جدول البيانات -->
                 <div class="glass-card p-6">
                     <div class="flex flex-wrap justify-between items-center mb-6 no-print gap-4">
                         <div class="flex gap-2 text-xs font-bold text-blue-300">
@@ -285,6 +305,53 @@ createApp({
             thanksCount: 0, thanksType: 'manager', penalty: 'none'
         });
 
+        // حفظ البيانات إلى localStorage
+        const saveToLocal = () => localStorage.setItem('rusafa_edu_db_v4', JSON.stringify(employees.value));
+
+        // تصدير النسخة الاحتياطية (JSON)
+        const exportBackup = () => {
+            const data = JSON.stringify(employees.value, null, 2);
+            const blob = new Blob([data], {type: 'application/json'});
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            const timestamp = new Date().toISOString().slice(0,19).replace(/:/g, '-');
+            a.download = `rusafa_backup_${timestamp}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+            alert("✅ تم تصدير النسخة الاحتياطية بنجاح");
+        };
+
+        // استيراد واستعادة البيانات من ملف JSON
+        const importBackup = (event) => {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                try {
+                    const imported = JSON.parse(e.target.result);
+                    if (Array.isArray(imported)) {
+                        if (confirm(`⚠️ سيتم استبدال البيانات الحالية (عددها ${employees.value.length}) بالبيانات المستوردة (عددها ${imported.length}).\nهل أنت متأكد؟`)) {
+                            employees.value = imported;
+                            saveToLocal();
+                            // إعادة ضبط الفلاتر والصفحة بعد الاستعادة
+                            currentPage.value = 1;
+                            searchQuery.value = '';
+                            filterType.value = 'all';
+                            alert(`✅ تم استعادة ${imported.length} سجل بنجاح`);
+                        }
+                    } else {
+                        alert("❌ الملف غير صالح: يجب أن يحتوي على مصفوفة من الموظفين");
+                    }
+                } catch(err) {
+                    alert("❌ خطأ في قراءة الملف: " + err.message);
+                }
+                // إعادة تعيين قيمة input لتمكين اختيار نفس الملف مرة أخرى
+                event.target.value = '';
+            };
+            reader.readAsText(file);
+        };
+
         onMounted(() => {
             const data = localStorage.getItem('rusafa_edu_db_v4');
             if (data) employees.value = JSON.parse(data);
@@ -302,7 +369,11 @@ createApp({
             }).length;
         };
 
-        watch(employees, () => calculateNextMonthDues(), { deep: true });
+        watch(employees, () => {
+            saveToLocal();
+            calculateNextMonthDues();
+        }, { deep: true });
+        
         watch(searchQuery, () => currentPage.value = 1);
         watch(filterType, () => currentPage.value = 1);
 
@@ -363,12 +434,9 @@ createApp({
             return next.getMonth() === nextMonth && next.getFullYear() === nextYear;
         };
 
-        // دالة التحكم في زر التنفيذ: متاح إذا استحق الموظف أو إذا كان الشهر القادم واليوم 20 فما فوق
         const canUpgrade = (emp) => {
             if (isDue(emp)) return true;
-            
             const now = new Date();
-            // السماح بالتنفيذ للمستحقين في الشهر القادم بدءاً من يوم 20
             if (now.getDate() >= 20 && isNextMonth(emp)) {
                 return true;
             }
@@ -378,7 +446,7 @@ createApp({
         const isPromotion = (sal) => [281, 314, 380, 453, 541, 640, 791].includes(sal);
 
         const applyUpgrade = (emp, silent = false) => {
-            if (!canUpgrade(emp)) return alert("لم يحن موعد الاستحقاق بعد (يجب الانتظار ليوم 20 من الشهر الحالي لتمشية معاملات الشهر القادم)");
+            if (!canUpgrade(emp)) return alert("⚠️ لم يحن موعد الاستحقاق بعد (يجب الانتظار ليوم 20 من الشهر الحالي لتمشية معاملات الشهر القادم)");
 
             let s = emp.salary;
             const promoMap = { 281: 296, 314: 362, 380: 429, 453: 509, 541: 600, 640: 723, 791: 910 };
@@ -405,7 +473,7 @@ createApp({
 
             if (!silent) {
                 saveToLocal();
-                alert("تم تنفيذ الاستحقاق بنجاح");
+                alert("✅ تم تنفيذ الاستحقاق بنجاح");
             }
         };
 
@@ -415,7 +483,7 @@ createApp({
             if (confirm(`هل أنت متأكد من تنفيذ الاستحقاق لعدد ${targets.length} موظف؟`)) {
                 targets.forEach(e => applyUpgrade(e, true));
                 saveToLocal();
-                alert(`تم تنفيذ ${targets.length} استحقاق بنجاح`);
+                alert(`✅ تم تنفيذ ${targets.length} استحقاق بنجاح`);
             }
         };
 
@@ -454,11 +522,11 @@ createApp({
             resetForm();
         };
 
-        const saveToLocal = () => localStorage.setItem('rusafa_edu_db_v4', JSON.stringify(employees.value));
         const resetForm = () => {
             form.value = { name: '', fileId: '', startDate: '', workplace: 'بابل', degree: 'بكالوريوس', salary: 296, prevSalary: 0, prevTitle: '', lastDate: '', thanksCount: 0, thanksType: 'manager', penalty: 'none' };
             isEdit.value = false;
         };
+        
         const editEmp = (e) => { form.value = {...e}; isEdit.value = true; editId.value = e.id; };
         const deleteEmp = (id) => { if(confirm("حذف الموظف؟")) { employees.value = employees.value.filter(e => e.id !== id); saveToLocal(); } };
 
@@ -467,6 +535,7 @@ createApp({
             filteredList, paginatedList, saveEmployee, isEdit, getTitle, getNextDate, isDue, applyUpgrade, 
             deleteEmp, editEmp, filterType, executeBulk, showStartDate, searchQuery, currentPage, pageSize,
             nextMonthDueCount, isNextMonth, canUpgrade,
+            exportBackup, importBackup,
             todayDate: new Date().toLocaleDateString('ar-IQ'),
             printData: () => window.print()
         };
